@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electricity</title>
+    <!-- Include Bootstrap CSS (you can link to a CDN or download the files) -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">Electricity bill Calculate</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item active">
+                <a class="nav-link" href="#"> <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#"></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#"></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="login.html">Sign-out</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Include Bootstrap JS (you can link to a CDN or download the files) -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
+
+<head>
+  <title>Indian Electricity Cost Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Include Bootstrap JS -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <!-- Include Bootstrap CSS -->
+  <link rel="stylesheet" href="style.css" />
+
+  <div class="container">
+    <h2></h2>
+    <form>
+      <!-- Input fields go here -->
+      <div class="form-group">
+        <label for="states">Select a State:</label>
+        <select class="form-control" id="states">
+          <option value="AndhraPradesh">Andhra Pradesh</option>
+          <option value="WestBengal">West Bengal</option>
+          <!-- Add options for other states -->
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="unitConsumption">Enter Unit Consumption:</label>
+        <input type="number" class="form-control" id="unitConsumption" min="0" placeholder="Enter units consumed" />
+      </div>
+    </form>
+    <button class="btn btn-primary btn-block" id="calculate-btn" onclick="calculateElectricityCost()">
+      Calculate
+    </button>
+    <hr />
+    <p>Selected State: <span id="selectedState"></span></p>
+    <p>Electricity Cost: <span id="electricityCost"></span></p>
+    <i>Subsdy Amount Not Diducted:</i> <b>(avg Rs.200/-)</b>
+    <hr />
+    <h2>Total Bill Payment (Month-wise)</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th>Bill Amount (Rs)</th>
+        </tr>
+      </thead>
+      <tbody id="billTable">
+        <!-- Bill details go here -->
+      </tbody>
+    </table>
+    <canvas id="chart" width="400" height="200"></canvas>
+
+    <hr />
+    <div id="userCards">
+      <!-- User cards go here -->
+    </div>
+  </div>
+  <script>
+    var unitRates = {
+  AndhraPradesh: {
+    slab1: {
+      start: 1,
+      end: 30,
+      rate: 1.9
+    },
+    slab2: {
+      start: 31,
+      end: 75,
+      rate: 3
+    },
+    slab3: {
+      start: 76,
+      end: 125,
+      rate: 4.5
+    },
+    slab4: {
+      start: 126,
+      end: 225,
+      rate: 6
+    },
+    slab5: {
+      start: 226,
+      end: 400,
+      rate: 8.75
+    },
+    slab6: {
+      start: 401,
+      end: Infinity,
+      rate: 9.75
+    }
+  },
+  "Tamilnadu": {
+    slab1: {
+      start: 1,
+      end: Infinity,
+      rate: 4
+    }
+  },
+  WestBengal: {
+    slab1: {
+      start: 1,
+      end: 102,
+      rate: 5.04
+    },
+    slab2: {
+      start: 103,
+      end: 180,
+      rate: 6.33
+    },
+    slab3: {
+      start: 181,
+      end: 300,
+      rate: 7.12
+    },
+    slab4: {
+      start: 301,
+      end: 600,
+      rate: 7.46
+    },
+    slab5: {
+      start: 601,
+      end: 900,
+      rate: 7.55
+    },
+    slab6: {
+      start: 901,
+      end: Infinity,
+      rate: 9.22
+    }
+  }
+  // Add unit rates for other states here
+};
+// Initialize the chart instance
+var ctx = document.getElementById("chart").getContext("2d");
+var myChart = new Chart(ctx, {
+  type: "bar",
+  data: {
+    labels: [],
+    datasets: [
+      {
+        label: "Monthly Bill Amount (in rupees)",
+        data: [],
+        backgroundColor: "rgba(0, 123, 255, 0.5)",
+        borderWidth: 1
+      }
+    ]
+  },
+  options: {
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  }
+});
+// Counter for generating unique user IDs
+var userIdCounter = 1;
+// Function to create and update the chart
+function createChart(labels, data) {
+  myChart.data.labels = labels;
+  myChart.data.datasets[0].data = data;
+  myChart.update();
+}
+
+function calculateElectricityCost() {
+  // Get the selected state from the drop-down list
+  var selectedState = document.getElementById("states").value;
+  // Get the unit consumption entered by the user
+  var unitConsumption = parseFloat(
+    document.getElementById("unitConsumption").value
+  );
+  // Calculate electricity cost based on unit slabs
+  var cost = calculateCostForUnitSlabs(selectedState, unitConsumption);
+  // Update the text views
+  document.getElementById("selectedState").textContent = selectedState;
+  document.getElementById("electricityCost").textContent = cost.toFixed(2); // Display cost with 2 decimal places
+  // Calculate total bill payment for each month (equally divided among the next 3 months)
+  var currentDate = new Date();
+  var currentMonth = currentDate.getMonth(); // Get the current month (0-11)
+  var months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+  ];
+  var billTable = document.getElementById("billTable");
+  billTable.innerHTML = ""; // Clear previous data
+  var monthlyCost = cost / 3; // Equally divide the cost among 3 months
+  var labels = [];
+  var data = [];
+  for (var i = 0; i < 3; i++) {
+    // Calculate for the next 3 months
+    var monthIndex = (currentMonth + i) % 12; // Loop through months (0-11)
+    var month = months[monthIndex];
+    var billAmount = monthlyCost.toFixed(2);
+    var row = "<tr><td>" + month + "</td><td>" + billAmount + "</td></tr>";
+    billTable.innerHTML += row;
+    labels.push(month);
+    data.push(billAmount);
+  }
+  // Create and update the chart
+  createChart(labels, data);
+  // Generate a unique user ID
+  var userId = "User" + userIdCounter++;
+  // Create a user card
+  var userCard = document.createElement("div");
+  userCard.className = "user-card";
+  userCard.innerHTML =
+    "<h4>User ID: " +
+    userId +
+    "</h4><p>State: " +
+    selectedState +
+    "</p><p>Total Bill: " +
+    cost.toFixed(2) +
+    " INR</p>";
+  // Append the user card to the userCards div
+  var userCardsContainer = document.getElementById("userCards");
+  userCardsContainer.appendChild(userCard);
+}
+// Function to calculate electricity cost based on unit slabs
+function calculateCostForUnitSlabs(state, units) {
+  var stateRates = unitRates[state];
+  var totalCost = 0;
+  if (stateRates) {
+    for (var slab in stateRates) {
+      if (stateRates.hasOwnProperty(slab)) {
+        var rateInfo = stateRates[slab];
+        var slabCost = 0;
+        if (units > rateInfo.start) {
+          var unitsInSlab = Math.min(units, rateInfo.end) - rateInfo.start + 1;
+          slabCost = unitsInSlab * rateInfo.rate;
+        }
+        totalCost += slabCost;
+      }
+    }
+  }
+  return totalCost;
+}
+
+  </script>
